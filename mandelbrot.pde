@@ -1,6 +1,11 @@
+// numbers convercence parameters
+int threshold = 5;
+int iterations = 200;
 
-int threshold = 20;
-int iterations = 500;
+// fractal visualization parameters
+float factor = 0.4;
+float xOffset = -0.75;
+float yOffset = 0.5;
 
 void setup(){
   size(1000, 1000);
@@ -18,9 +23,9 @@ void draw(){
   
   for(int i = 0; i < width; i++)
     for(int j = 0; j < height; j++){
-      set(i, j, color((new Complex(i/((float)width), -j/((float)height))).converges()/5,
-                      (new Complex(i/((float)width), -j/((float)height))).converges(), 
-                      (new Complex(i/((float)width), -j/((float)height))).converges()/5)
+      set(i, j, color((new Complex((i/((float)width)+xOffset)/factor, (-j/((float)height)+yOffset)/factor)).converges()/1.6,
+                      (new Complex((i/((float)width)+xOffset)/factor, (-j/((float)height)+yOffset)/factor)).converges()/1.4, 
+                      (new Complex((i/((float)width)+xOffset)/factor, (-j/((float)height)+yOffset)/factor)).converges())
                       );
     }
     
@@ -51,10 +56,10 @@ public class Complex{
   }
   
   int converges(){
-        if(Math.abs(this.im + this.re) > 10) return 1;
+        if(Math.abs(this.im + this.re) > threshold) return 1;
         Complex z = new Complex(0, 0);
         for(int i = 0; i < iterations; i++){
-            if(Math.abs(z.im + z.re) > 10) return i;
+            if(Math.abs(z.im + z.re) > threshold) return i*(500/iterations);
             z = z.product(z);
             z = z.sum(this);
         }
