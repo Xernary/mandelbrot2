@@ -1,10 +1,11 @@
 // fractal visualization parameters
-float zoomFactor = 0.1;
 float zoom = 1;
+float zoomFactor = 0.1;
+//MAX ZOOM 82K
 
 // numbers convercence parameters
 long threshold = 10000000000000000L;
-float iterations = (int) 50*zoom; // 50 is the minimum
+float iterations = (int) 50*map(zoom, 1, 10000, 1, 10000*1000); // 50 is the minimum
 
 
 
@@ -14,7 +15,6 @@ void setup(){
   background(255);
   
   smooth();
-  
 }
 
 
@@ -23,13 +23,13 @@ void draw(){
   // move image  
   // to refactor
   if(mousePressed && mouseButton == LEFT){   
-      centreX = centreX + map(mouseX, 0, width, 2, -2) - map(lastMouseX, 0, width, 2, -2);//- cursorDistanceX;
-      centreY = centreY + map(mouseY, 0, height, -2, 2) - map(lastMouseY, 0, height, -2, 2);//+ cursorDistanceY;      
+      centreX = (centreX + map(mouseX, 0, width, 2/zoom, -2/zoom) - map(lastMouseX, 0, width, 2/zoom, -2/zoom));//- cursorDistanceX;
+      centreY = (centreY + map(mouseY, 0, height, -2/zoom, 2/zoom) - map(lastMouseY, 0, height, -2/zoom, 2/zoom));//+ cursorDistanceY;      
       lastMouseX = mouseX;
       lastMouseY = mouseY;
     }
   
-  //loadPixels();
+  loadPixels();
   
   for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++){
@@ -40,34 +40,39 @@ void draw(){
     }
   }
   
-  //updatePixels();
+  updatePixels();
     
 }
 
 
-float centreX = 0;
-float centreY = 0;
+double centreX = 0;
+double centreY = 0;
 
-float lastMouseX = 0;
-float lastMouseY = 0;
+double lastMouseX = 0;
+double lastMouseY = 0;
 
 
-void drawFractal(int i, int j, float centreX_, float centreY_){
+void drawFractal(int i, int j, double centreX_, double centreY_){
   
-  float re = map(i, 0, width, (-2 - centreY_)/zoom, (2 - centreY_)/zoom);
-  float im = -map(j, 0, height, (2 - centreX_)/zoom, (-2 - centreX_)/zoom);
-  set(j, i, color( (new Complex(im, re)).converges()/1.6,
+  double re = map(i, 0, width, (-2 )/zoom - centreY_, (2 )/zoom - centreY_);
+  double im = -map(j, 0, height, (2)/zoom - centreX_, (-2)/zoom - centreX_);
+  /*set(j, i, color( (new Complex(im, re)).converges()/1.6,
                     (new Complex(im, re)).converges()/1.4,
-                    (new Complex(im, re)).converges()));             
+                    (new Complex(im, re)).converges()));*/
+  pixels[j+i*width] = color(/*(new Complex(im, re)).converges()/1.6,
+                            (new Complex(im, re)).converges()/1.4,*/
+                            (new Complex(im, re)).converges(), (new Complex(im, re)).converges(), (new Complex(im, re)).converges());
+                    
+                    
 }
 
 
 public class Complex{
   
-  float re;
-  float im;
+  double re;
+  double im;
   
-  Complex(float re, float im){
+  Complex(double re, double im){
     this.re = re;
     this.im = im;
   }
@@ -103,6 +108,9 @@ void mouseWheel(MouseEvent event) {
   int e = event.getCount(); // 1 = down -1 = up
   //factor = factor - (e*zoomFactor);
   zoom = zoom - (e*zoomFactor);
+  zoomFactor = zoomFactor - e*0.1*zoomFactor;
+  
+  print("zoom: " + zoom + "\n");
 }
 
 // on mouse pressed
@@ -115,6 +123,12 @@ void mousePressed(){
 
 void mouseReleased(){
   if(mouseButton != LEFT) return;
+}
+
+double map(double oldValue, double oldMin, double oldMax, double newMin, double newMax){
+  
+  return (((oldValue - oldMin) * (newMax - newMin)) / (oldMax - oldMin)) + newMin;
+
 }
 
 
