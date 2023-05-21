@@ -54,14 +54,15 @@ double lastMouseY = 0;
 
 void drawFractal(int i, int j, double centreX_, double centreY_){
   
-  double re = map(i, 0, width, (-2 )/zoom - centreY_, (2 )/zoom - centreY_);
-  double im = -map(j, 0, height, (2)/zoom - centreX_, (-2)/zoom - centreX_);
+  double re = -map(j, 0, height, (2)/zoom - centreX_, (-2)/zoom - centreX_);
+  double im = map(i, 0, width, (-2 )/zoom - centreY_, (2 )/zoom - centreY_);
+  
   /*set(j, i, color( (new Complex(im, re)).converges()/1.6,
                     (new Complex(im, re)).converges()/1.4,
                     (new Complex(im, re)).converges()));*/
   pixels[j+i*width] = color(/*(new Complex(im, re)).converges()/1.6,
                             (new Complex(im, re)).converges()/1.4,*/
-                            (new Complex(im, re)).converges(), (new Complex(im, re)).converges(), (new Complex(im, re)).converges());
+                            (new Complex(re, im)).converges(), (new Complex(re, im)).converges(), (new Complex(re, im)).converges());
                     
                     
 }
