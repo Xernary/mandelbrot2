@@ -8,21 +8,42 @@ int colorAdjustRateo = 20;
 long threshold = 4;
 float iterations = 50;// map(log(zoom), log(1), log(40000000000000L), 50, 10024);//(int) 50*map(zoom, 1, 10000, 1, 10000*1000); // 50 is the minimum
 int iterationsJump = 50;
+int maxIterations = 1024;
 float iterationsFactor = 0;
 
+// threads
+int nThreads = 12;
+RenderThread[] threads;
+
+boolean firstFrame = true;
 
 
 void setup(){
-  size(1000, 1000);
+  size(1008, 1008);
   background(255);
+  frameRate(30);
   
   smooth();
+  firstFrame = true;
+  threads = new RenderThread[nThreads];
+  if(firstFrame){
+    // create threads
+    int tId = 0;
+    threads = new RenderThread[nThreads];
+    for(int i = 0; i < nThreads; i++){
+      threads[i] = new RenderThread(tId, nThreads);
+      tId++;
+    }
+  }
 }
 
 
 
+
 void draw(){
-  iterations = map(log(zoom), log(1), log(40000000000000L), 50+iterationsFactor, 1024+iterationsFactor);
+  
+  
+  iterations = map(log(zoom), log(1), log(40000000000000L), 50+iterationsFactor, maxIterations+iterationsFactor);
   // move image  
   // to refactor
   if(mousePressed && mouseButton == LEFT){   
@@ -34,16 +55,40 @@ void draw(){
   
   loadPixels();
   
-  for(int i = 0; i < height; i++){
+  // threads method
+   for(int i = 0; i < nThreads; i++){
+     threads[i] = new RenderThread(i, nThreads);
+     threads[i].start();
+   }
+   // threads method
+   for(int i = 0; i < nThreads; i++){
+     try{
+       threads[i].join();
+     }catch(Exception e){
+       e.printStackTrace();
+     }
+   }
+  
+  // normal method
+  /*for(int i = 0; i < height; i++){
     for(int j = 0; j < width; j++){
       drawFractal(i, j, centreX, centreY);
       
       // applying mask for anti-aliasing
       
     }
-  }
+  }*/
+  
+  // threads method
+   for(int i = 0; i < nThreads; i++){
+     threads[i] = new RenderThread(i, nThreads);
+     threads[i].interrupt();
+   }
   updatePixels();
-    
+  
+  
+  
+  firstFrame = false;
 }
 
 
