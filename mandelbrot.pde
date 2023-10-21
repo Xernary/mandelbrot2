@@ -1,4 +1,6 @@
 // fractal visualization parameters
+double centreX = -0.5;
+double centreY = 0;
 float zoom = 1;
 float zoomFactor = 0.1;
 int colorAdjustRateo = 20;
@@ -8,39 +10,37 @@ int colorAdjustRateo = 20;
 long threshold = 4;
 float iterations = 50;// map(log(zoom), log(1), log(40000000000000L), 50, 10024);//(int) 50*map(zoom, 1, 10000, 1, 10000*1000); // 50 is the minimum
 int iterationsJump = 50;
-int maxIterations = 1024;
+int maxIterations = 1024 / 2;
 float iterationsFactor = 0;
 
 // threads
-int nThreads = 12;
+int nThreads = Runtime.getRuntime().availableProcessors();
 RenderThread[] threads;
+Thread[] rThreads;
+RenderRunnable[] runnables;
+long firstThreadId;
 
 boolean firstFrame = true;
 
 
 void setup(){
-  size(1008, 1008);
+  size(1008/2, 1008/2);
   background(255);
   frameRate(30);
   
   smooth();
   firstFrame = true;
   threads = new RenderThread[nThreads];
-  if(firstFrame){
-    // create threads
-    int tId = 0;
-    threads = new RenderThread[nThreads];
-    for(int i = 0; i < nThreads; i++){
-      threads[i] = new RenderThread(tId, nThreads);
-      tId++;
-    }
-  }
+  rThreads = new Thread[nThreads];
+  runnables = new RenderRunnable[nThreads];
+  
 }
 
 
 
 
 void draw(){
+  
   
   
   iterations = map(log(zoom), log(1), log(40000000000000L), 50+iterationsFactor, maxIterations+iterationsFactor);
@@ -55,49 +55,25 @@ void draw(){
   
   loadPixels();
   
-  // threads method
-   for(int i = 0; i < nThreads; i++){
-     threads[i] = new RenderThread(i, nThreads);
-     threads[i].start();
-   }
-   // threads method
-   for(int i = 0; i < nThreads; i++){
-     try{
-       threads[i].join();
-     }catch(Exception e){
-       e.printStackTrace();
-     }
-   }
-  
   // normal method
-  /*for(int i = 0; i < height; i++){
-    for(int j = 0; j < width; j++){
-      drawFractal(i, j, centreX, centreY);
-      
-      // applying mask for anti-aliasing
-      
-    }
-  }*/
+  //normalRendering();
   
-  // threads method
-   for(int i = 0; i < nThreads; i++){
-     threads[i] = new RenderThread(i, nThreads);
-     threads[i].interrupt();
-   }
+  // multi-threads method
+  threadsRendering();
+  
+  // runnable method
+  //runnableRendering();
+  
+  // threads pool method
+  //threadsPoolRendering();
+  
   updatePixels();
-  
-  
-  
+
   firstFrame = false;
 }
 
-
-double centreX = 0;
-double centreY = 0;
-
 double lastMouseX = 0;
 double lastMouseY = 0;
-
 
 void drawFractal(int i, int j, double centreX_, double centreY_){
   
@@ -106,9 +82,7 @@ void drawFractal(int i, int j, double centreX_, double centreY_){
   
   color col = colorHSB((new Complex(re, im)).converges());
                     
-  pixels[j+i*width] = col;
-                    
-                    
+  pixels[j+i*width] = col;       
 }
 
 
@@ -163,7 +137,89 @@ public class Complex{
   
 }
 
-// on mouse wheel moved
+void normalRendering(){
+ for(int i = 0; i < height; i++){
+    for(int j = 0; j < width; j++){
+      drawFractal(i, j, centreX, centreY);
+      
+      // applying mask for anti-aliasing
+      
+    }
+  } 
+}
+
+void threadsRendering(){
+  // create threads
+   for(int i = 0; i < nThreads; i++){
+     threads[i] = new RenderThread(i, nThreads);
+     threads[i].start();
+     print(threads[i].getId() + "\n");
+   }
+   
+   // join threads
+   for(int i = 0; i < nThreads; i++){
+     try{
+       threads[i].join();
+     }catch(Exception e){
+       e.printStackTrace();
+     }
+   }
+  
+   // kill threads
+   for(int i = 0; i < nThreads; i++){
+     threads[i] = new RenderThread(i, nThreads);
+     threads[i].interrupt();
+   }
+}
+
+void runnableRendering(){
+  // create runnables and threads
+   for(int i = 0; i < nThreads; i++){   
+     rThreads[i].start();
+   }
+   
+   // join threads
+   for(int i = 0; i < nThreads; i++){
+     try{
+       rThreads[i].join();
+     }catch(Exception e){
+       e.printStackTrace();
+     }
+   }
+}
+
+void threadsPoolRendering(){
+  if(firstFrame){
+    // create threads
+     for(int i = 0; i < nThreads; i++){
+       threads[i] = new RenderThread(i, nThreads);     
+     }
+     firstThreadId = threads[0].getId();
+  }
+  
+  //start threads
+  for(long i = firstThreadId; i < nThreads; i++){
+    //threads[i].start();
+  }
+  
+   // join threads
+   for(int i = 0; i < nThreads; i++){
+     try{
+       threads[i].join();
+     }catch(Exception e){
+       e.printStackTrace();
+     }
+   }
+   
+   //for (Thread t : Thread.getAllStackTraces().keySet()) 
+    // if (t.getId()==id)
+  
+}
+
+
+// INPUTS/COMMANDS
+
+// zoom
 void mouseWheel(MouseEvent event) {
   int e = event.getCount(); // 1 = down -1 = up
   //factor = factor - (e*zoomFactor);
@@ -174,7 +230,7 @@ void mouseWheel(MouseEvent event) {
   print("zoom: " + zoom + "\n");
 }
 
-// on mouse pressed
+// drag start
 void mousePressed(){
   if(mouseButton != LEFT) return;
   
@@ -182,6 +238,7 @@ void mousePressed(){
   lastMouseY = mouseY;
 }
 
+// drag end
 void mouseReleased(){
   if(mouseButton != LEFT) return;
 }
@@ -192,20 +249,33 @@ double map(double oldValue, double oldMin, double oldMax, double newMin, double 
 
 }
 
+// keyboard inputs
 void keyPressed(){
   
+  //increase iterations
   if(key == 'd'){
     iterationsFactor = iterationsFactor + iterationsJump;
     return;
   }
+  
+  //decrease iterations
   if(key == 'a'){
     iterationsFactor = iterationsFactor - iterationsJump;
         if(iterationsFactor < 0) iterationsFactor = 0;
     return;
   }
-  return;
   
+  //reset centre
+  if(key == 'r'){
+    centreX = -0.5;
+    centreY = 0;
+    zoom = 1;
+    return;
+  }
+  return;
 }
+
+
 
 
 void antiAliasing(){

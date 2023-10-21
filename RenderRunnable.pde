@@ -1,8 +1,8 @@
-class RenderThread extends Thread{
+class RenderRunnable implements Runnable{
   
   int tId, nThreads;
   
-  public RenderThread(int tId, int nThreads){
+  public RenderRunnable(int tId, int nThreads){
     this.tId = tId;
     this.nThreads = nThreads;
   }
